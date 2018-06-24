@@ -1,6 +1,6 @@
 {
     "name": "typed-try-catch",
-    "version": "0.0.1",
+    "version": "1.0.0",
     "description": "Try-catch and errors alternative providing a syntactically slim way to catch errors by type",
     "main": "dist/typed-try-catch.js",
     "repository": "https://github.com/jneuendorf/typed-try-catch.git",
