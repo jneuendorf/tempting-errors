@@ -1,0 +1,25 @@
+{
+    "name": "typed-try-catch",
+    "version": "0.0.1",
+    "description": "Try-catch and errors alternative providing a syntactically slim way to catch errors by type",
+    "main": "dist/typed-try-catch.js",
+    "repository": "https://github.com/jneuendorf/typed-try-catch.git",
+    "author": "Jim Neuendorf <jim.neuendorf@gmx.de>",
+    "license": "MIT",
+    "scripts": {
+        "test": "jest",
+        "transpile": "babel src --out-dir dist --ignore spec.js"
+    },
+    "devDependencies": {
+        "babel-cli": "^6.26.0",
+        "babel-core": "^6.26.3",
+        "babel-eslint": "^8.2.5",
+        "babel-jest": "^23.0.1",
+        "babel-preset-env": "^1.7.0",
+        "babel-preset-stage-0": "^6.24.1",
+        "eslint": "^5.0.0",
+        "eslint-plugin-import": "^2.12.0",
+        "jest": "^23.1.0",
+        "release-it": "^7.4.7"
+    }
+}
