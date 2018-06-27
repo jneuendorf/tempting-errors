@@ -5,16 +5,29 @@ class BaseError {
     }
 
     get name() {
-        return this.constructor.getName()
+        return this.constructor.name
     }
 
     toString() {
-        const {name} = this
-        if (this.message) {
-            return `${name}: ${this.message}`
+        const {name, message} = this
+        if (message) {
+            return `${name}: ${message}`
         }
         return name
     }
+}
+
+
+const globalObject = (
+    typeof(global) !== 'undefined'
+    ? global
+    : window
+)
+const noop = () => {}
+// https://stackoverflow.com/a/18939541/6928824
+// Additionally, we return 'false' for 'null'/'undefined'.
+const isSubclass = (sub, sup) => {
+    return sub && (sub.prototype instanceof sup || sub === sup)
 }
 
 const define = (...names) => {
@@ -40,15 +53,15 @@ const define = (...names) => {
     })
     for (const errorClass of errorClasses) {
         errorRegistry[errorClass.getName()] = errorClass
-        errorSet.add(errorClass)
+        definedErrors.add(errorClass)
     }
     return errorClasses
 }
 
-const noop = () => {}
 
 class TryCatch {
     handlers = new Map()
+    elseHandler = noop
     finallyHandler = noop
     finallyWithReturn = false
 
@@ -65,10 +78,10 @@ class TryCatch {
         const errorClasses = errorTypes.map(type => {
             const errorClass = (
                 typeof(type) === 'string'
-                ? errorRegistry[type]
+                ? (errorRegistry[type] || globalObject[type])
                 : type
             )
-            if (!errorSet.has(errorClass)) {
+            if (!definedErrors.has(errorClass) && !isSubclass(errorClass, Error)) {
                 throw new Error('Invalid error type.')
             }
             return errorClass
@@ -77,61 +90,121 @@ class TryCatch {
         return this
     }
 
+    else(handler) {
+        this.elseHandler = handler
+        return this
+    }
+
     finally(handler, {withReturn=false, autoRun=true}={}) {
         this.finallyHandler = handler
         this.finallyWithReturn = withReturn
-        if (autoRun) {
+        if (autoRun === true) {
             return this.run()
+        }
+        else {
+            return this
         }
     }
 
+    // This is a convenience method for '.finally(..., {autoRun: false}).async()'.
+    // Since it is async it does not make sense to have the 'autoRun' flag.
+    async finallyAsync(handler, {withReturn=false}={}) {
+        this.finallyHandler = handler
+        this.finallyWithReturn = withReturn
+        return await this.async()
+    }
+
     run(...args) {
-        const {tryFunc, finallyWithReturn} = this
+        const {
+            tryFunc,
+            handlers,
+            elseHandler,
+            finallyHandler,
+            finallyWithReturn,
+        } = this
+        let errorWasThrown = false
         try {
             return tryFunc(...args)
         }
         catch (error) {
+            errorWasThrown = true
             const errorClass = error.constructor
-            for (const [classSet, handler] of this.handlers.entries()) {
+            for (const [classSet, handler] of handlers.entries()) {
                 if (classSet.has(errorClass)) {
                     return handler(error)
                 }
             }
         }
         finally {
-            const result = this.finallyHandler()
-            if (finallyWithReturn) {
-                return result
+            // https://stackoverflow.com/a/128829/6928824
+            try {
+                if (!errorWasThrown && elseHandler !== noop) {
+                    const result = elseHandler()
+                    if (!finallyWithReturn) {
+                        return result
+                    }
+
+                }
+            }
+            finally {
+                if (finallyHandler !== noop) {
+                    const result = finallyHandler()
+                    if (finallyWithReturn) {
+                        return result
+                    }
+                }
             }
         }
     }
 
+    // Code needs to be duplicated because try-catch compiles different in an
+    // async function. :/
     async async(...args) {
-        // return await this.run(...args)
-        const {tryFunc, finallyWithReturn} = this
+        const {
+            tryFunc,
+            handlers,
+            elseHandler,
+            finallyHandler,
+            finallyWithReturn,
+        } = this
+        let errorWasThrown = false
         try {
             return await tryFunc(...args)
         }
         catch (error) {
+            errorWasThrown = true
             const errorClass = error.constructor
-            for (const [classSet, handler] of this.handlers.entries()) {
+            for (const [classSet, handler] of handlers.entries()) {
                 if (classSet.has(errorClass)) {
                     return await handler(error)
                 }
             }
         }
         finally {
-            const result = this.finallyHandler()
-            if (finallyWithReturn) {
-                return await result
+            try {
+                if (!errorWasThrown && elseHandler !== noop) {
+                    const result = await elseHandler()
+                    if (!finallyWithReturn) {
+                        return result
+                    }
+
+                }
+            }
+            finally {
+                if (finallyHandler !== noop) {
+                    const result = await finallyHandler()
+                    if (finallyWithReturn) {
+                        return result
+                    }
+                }
             }
         }
     }
 }
 
-// Error registry
+
 const errorRegistry = {}
-const errorSet = new Set()
+const definedErrors = new Set()
 
 
 export {
