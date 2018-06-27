@@ -9,7 +9,8 @@
     "scripts": {
         "coverage": "jest --coverage",
         "test": "jest",
-        "transpile": "babel src --out-dir dist --ignore spec.js"
+        "transpile": "babel src --out-dir dist --ignore spec.js",
+        "release": "yarn transpile && release-it"
     },
     "devDependencies": {
         "babel-cli": "^6.26.0",
