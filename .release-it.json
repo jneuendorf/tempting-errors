@@ -1,0 +1,8 @@
+{
+    "git": {
+        "tagName": "v${version}"
+    },
+    "scripts": {
+         "changelog": "git log --pretty=format:\"* %s (%h)\" [REV_RANGE]"
+    }
+}
