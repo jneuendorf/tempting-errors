@@ -52,6 +52,19 @@ describe('typed try catch', () => {
         expect(instance.run(new ErrorC('ErrorC'))).toBe('ErrorC')
     })
 
+    test('bubbling errors when uncaught', () => {
+        const [ErrorA, ErrorB, ErrorC] = define('ErrorA', 'ErrorB', 'ErrorC')
+        const instance = (
+            attempt(() => {
+                throw new ErrorC('Uncaught ErrorC')
+            })
+            .catch(ErrorA, ErrorB, error => {
+                return error.message
+            })
+        )
+        expect(() => instance.run()).toThrow('Uncaught ErrorC')
+    })
+
     test('native errors', () => {
         const instance = (
             attempt(error => {
@@ -184,6 +197,24 @@ describe('typed try catch', () => {
             .finallyAsync(() => 'finally', {withReturn: true})
         )
         expect(result).toBe('finally')
+    })
+
+    test('bubbling errors when uncaught (async)', () => {
+        const [ErrorA, ErrorB, ErrorC] = define('ErrorA', 'ErrorB', 'ErrorC')
+        const instance = (
+            attempt(() => {
+                throw new ErrorC('Uncaught ErrorC')
+            })
+            .catch(ErrorA, ErrorB, error => {
+                return error.message
+            })
+        )
+        try {
+            instance.async()
+        }
+        catch (error) {
+            expect(error.message).toBe('Uncaught ErrorC')
+        }
     })
 
     test('coverage :)', () => {

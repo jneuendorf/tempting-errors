@@ -134,6 +134,7 @@ class TryCatch {
                     return handler(error)
                 }
             }
+            throw error
         }
         finally {
             // https://stackoverflow.com/a/128829/6928824
@@ -179,6 +180,7 @@ class TryCatch {
                     return await handler(error)
                 }
             }
+            throw error
         }
         finally {
             try {
